@@ -1,3 +1,3 @@
-module github.com/onattech/tsawler/toolkit
+module github.com/onattech/toolkit
 
 go 1.19
