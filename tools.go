@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -20,8 +21,8 @@ type Tools struct {
 	AllowedFileTypes []string
 }
 
-// RandomString returns a string of random characters of length n, using  randomStringSource
-// as a source for the string
+// RandomString returns a string of random characters of length n, using randomStringSource
+// as the source for the string
 func (t *Tools) RandomString(n int) string {
 	s, r := make([]rune, n), []rune(randomStringSource)
 	for i := range s {
@@ -33,13 +34,15 @@ func (t *Tools) RandomString(n int) string {
 	return string(s)
 }
 
-// UploadedFile is a struct to save information about an uploaded file
+// UploadedFile is a struct used to save information about an uploaded file
 type UploadedFile struct {
 	NewFileName      string
 	OriginalFileName string
 	FileSize         int64
 }
 
+// UploadOneFile is just a convenience method that calls UploadFiles, but expects only one file to
+// be in the upload.
 func (t *Tools) UploadOneFile(r *http.Request, uploadDir string, rename ...bool) (*UploadedFile, error) {
 	renameFile := true
 	if len(rename) > 0 {
@@ -52,9 +55,12 @@ func (t *Tools) UploadOneFile(r *http.Request, uploadDir string, rename ...bool)
 	}
 
 	return files[0], nil
-
 }
 
+// UploadFiles uploads one or more file to a specified directory, and gives the files a random name.
+// It returns a slice containing the newly named files, the original file names, the size of the files,
+// and potentially an error. If the optional last parameter is set to true, then we will not rename
+// the files, but will use the original file names.
 func (t *Tools) UploadFiles(r *http.Request, uploadDir string, rename ...bool) ([]*UploadedFile, error) {
 	renameFile := true
 	if len(rename) > 0 {
@@ -123,6 +129,7 @@ func (t *Tools) UploadFiles(r *http.Request, uploadDir string, rename ...bool) (
 				}
 
 				uploadedFile.OriginalFileName = hdr.Filename
+
 				var outfile *os.File
 				defer outfile.Close()
 
@@ -145,11 +152,10 @@ func (t *Tools) UploadFiles(r *http.Request, uploadDir string, rename ...bool) (
 			}
 		}
 	}
-
 	return uploadedFiles, nil
 }
 
-// CreatIfNotExist creates a directory, and all necessary parents, if it does not exist
+// CreateDirIfNotExist creates a directory, and all necessary parents, if it does not exist
 func (t *Tools) CreateDirIfNotExist(path string) error {
 	const mode = 0755
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -159,4 +165,18 @@ func (t *Tools) CreateDirIfNotExist(path string) error {
 		}
 	}
 	return nil
+}
+
+// Slugify is a (very) simple means of creating a slug from a string
+func (t *Tools) Slugify(s string) (string, error) {
+	if s == "" {
+		return "", errors.New("empty string not permitted")
+	}
+
+	var re = regexp.MustCompile(`[^a-z\d]+`)
+	slug := strings.Trim(re.ReplaceAllString(strings.ToLower(s), "-"), "-")
+	if len(slug) == 0 {
+		return "", errors.New("after removing characters, slug is zero length")
+	}
+	return slug, nil
 }

@@ -12,7 +12,7 @@ The included tools are:
 -   [x] Get a random string of length n
 -   [ ] Post JSON to a remote service
 -   [x] Create a directory, including all parent directories, if it does not already exist
--   [ ] Create a URL safe slug from a string
+-   [x] Create a URL safe slug from a string
 
 ## Installation
 
