@@ -98,6 +98,7 @@ func (t *Tools) UploadFiles(r *http.Request, uploadDir string, rename ...bool) (
 				}
 				defer infile.Close()
 
+				// Buffer is to be used to check the first 512 bytes of the file to determine the file type
 				buff := make([]byte, 512)
 				_, err = infile.Read(buff)
 				if err != nil {
@@ -122,6 +123,7 @@ func (t *Tools) UploadFiles(r *http.Request, uploadDir string, rename ...bool) (
 					return nil, errors.New("the uploaded file type is not permitted")
 				}
 
+				// We had read the first 512 bytes above, now need to roll back to the beginning
 				_, err = infile.Seek(0, 0)
 				if err != nil {
 					return nil, err
