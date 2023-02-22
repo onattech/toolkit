@@ -356,3 +356,31 @@ func TestTools_ErrorJSON(t *testing.T) {
 		t.Errorf("wrong status code returned; expected 503, but got %d", rr.Code)
 	}
 }
+
+func Test_app_authenticate(t *testing.T) {
+	var theTests = []struct {
+		name               string
+		requestBody        string
+		expectedStatusCode int
+	}{
+		{"valid user", `{"email":"admin@example.com","password":"secret"}`, http.StatusOK},
+		{"not json", `I'm not JSON`, http.StatusUnauthorized},
+		{"empty json", `{}`, http.StatusUnauthorized},
+		{"empty email", `{"email":""}`, http.StatusUnauthorized},
+		{"empty password", `{"email":"admin@example.com"}`, http.StatusUnauthorized},
+		{"invalid user", `{"email":"admin@someotherdomain.com","password":"secret"}`, http.StatusUnauthorized},
+	}
+
+	for _, e := range theTests {
+		var reader io.Reader = strings.NewReader(e.requestBody)
+		req, _ := http.NewRequest("POST", "/auth", reader) // url doesn't matter
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(app.authenticate)
+
+		handler.ServeHTTP(rr, req)
+
+		if e.expectedStatusCode != rr.Code {
+			t.Errorf("%s: return wrong status code; expected %d but got %d", e.name, e.expectedStatusCode, rr.Code)
+		}
+	}
+}
